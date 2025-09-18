@@ -1,0 +1,17 @@
+# Core
+numpy>=1.24
+pandas>=2.0
+matplotlib>=3.7
+seaborn>=0.13
+scikit-learn>=1.3
+
+# Deep learning
+torch>=2.2
+torchvision>=0.17
+
+# Data + utils
+datasets>=2.20
+huggingface-hub>=0.24
+
+# Plot saving
+pillow>=10.0
