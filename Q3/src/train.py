@@ -37,7 +37,12 @@ def train_one_epoch(model: nn.Module, loader: DataLoader, criterion: nn.Module,
         logits = model(images)  # (B, C, num_classes, H, W)
         
         # Calculate loss
-        loss = criterion(logits, images)
+        # Reshape for CrossEntropyLoss: (B*C*H*W, num_classes) and (B*C*H*W,)
+        B, C, num_classes, H, W = logits.shape
+        logits_flat = logits.permute(0, 1, 3, 4, 2).contiguous().view(-1, num_classes)
+        targets_flat = images.view(-1).long()
+        
+        loss = criterion(logits_flat, targets_flat)
         nll = calculate_nll(logits, images)
         
         # Backward pass
@@ -83,7 +88,12 @@ def validate(model: nn.Module, loader: DataLoader, criterion: nn.Module,
             logits = model(images)
             
             # Calculate metrics
-            loss = criterion(logits, images)
+            # Reshape for CrossEntropyLoss: (B*C*H*W, num_classes) and (B*C*H*W,)
+            B, C, num_classes, H, W = logits.shape
+            logits_flat = logits.permute(0, 1, 3, 4, 2).contiguous().view(-1, num_classes)
+            targets_flat = images.view(-1).long()
+            
+            loss = criterion(logits_flat, targets_flat)
             nll = calculate_nll(logits, images)
             
             total_loss += loss.item() * batch_size
