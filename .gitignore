@@ -52,6 +52,11 @@ outputs/
 *.json
 *.zip
 
+# Large datasets
+*.tar.gz
+cifar-10-python/
+cifar-10-batches-py/
+
 # Jupyter Notebook
 .ipynb_checkpoints/
 
