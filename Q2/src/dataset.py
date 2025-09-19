@@ -4,6 +4,7 @@ from datasets import load_dataset
 import numpy as np
 from typing import List, Tuple, Dict
 import re
+import requests
 
 
 class ShakespeareDataset(Dataset):
@@ -18,9 +19,9 @@ class ShakespeareDataset(Dataset):
         """
         self.seq_len = seq_len
         
-        # Load dataset - use direct download approach
+        # Load dataset - use direct download approach for complete Shakespeare
         try:
-            # Try loading with ignore_verifications
+            # Try loading with ignore_verifications first
             self.dataset = load_dataset('karpathy/tiny_shakespeare', ignore_verifications=True)
             if split == 'train':
                 self.text = self.dataset['train']['text']
@@ -28,26 +29,98 @@ class ShakespeareDataset(Dataset):
                 self.text = self.dataset['validation']['text']
             else:  # test
                 self.text = self.dataset['test']['text']
+            print("✅ Successfully loaded HuggingFace Shakespeare dataset")
         except Exception as e:
-            # Fallback: use a simple Shakespeare text sample
-            print(f"Warning: {e}")
-            print("Using fallback Shakespeare text...")
-            self.text = """
-            To be, or not to be, that is the question:
-            Whether 'tis nobler in the mind to suffer
-            The slings and arrows of outrageous fortune,
-            Or to take arms against a sea of troubles
-            And by opposing end them. To die—to sleep,
-            No more; and by a sleep to say we end
-            The heart-ache and the thousand natural shocks
-            That flesh is heir to: 'tis a consummation
-            Devoutly to be wish'd. To die, to sleep;
-            To sleep, perchance to dream—ay, there's the rub:
-            For in that sleep of death what dreams may come,
-            When we have shuffled off this mortal coil,
-            Must give us pause—there's the respect
-            That makes calamity of so long life.
-            """
+            # Download complete Shakespeare dataset directly
+            print(f"HuggingFace loading failed: {e}")
+            print("📥 Downloading complete Shakespeare dataset from Karpathy's char-rnn...")
+            try:
+                url = "https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt"
+                response = requests.get(url, timeout=30)
+                response.raise_for_status()
+                
+                full_text = response.text
+                print(f"✅ Downloaded complete Shakespeare dataset!")
+                print(f"📊 Total characters: {len(full_text):,}")
+                print(f"📊 Unique characters: {len(set(full_text))}")
+                
+                # Split the dataset based on the split parameter
+                if split == 'train':
+                    # Use first 90% for training
+                    split_idx = int(0.9 * len(full_text))
+                    self.text = full_text[:split_idx]
+                elif split == 'validation':
+                    # Use next 5% for validation
+                    train_split = int(0.9 * len(full_text))
+                    val_split = int(0.95 * len(full_text))
+                    self.text = full_text[train_split:val_split]
+                else:  # test
+                    # Use last 5% for test
+                    test_split = int(0.95 * len(full_text))
+                    self.text = full_text[test_split:]
+                    
+                print(f"📋 {split.upper()} split: {len(self.text):,} characters")
+                
+            except Exception as download_error:
+                # Final fallback: use small Shakespeare sample
+                print(f"❌ Download failed: {download_error}")
+                print("⚠️ Using small fallback Shakespeare text...")
+                self.text = """
+First Citizen:
+Before we proceed any further, hear me speak.
+
+All:
+Speak, speak.
+
+First Citizen:
+You are all resolved rather to die than to famish?
+
+All:
+Resolved. resolved.
+
+First Citizen:
+First, you know Caius Marcius is chief enemy to the people.
+
+All:
+We know't, we know't.
+
+First Citizen:
+Let us kill him, and we'll have corn at our own price.
+Is't a verdict?
+
+All:
+No more talking on't; let it be done: away, away!
+
+Second Citizen:
+One word, good citizens.
+
+First Citizen:
+We are accounted poor citizens, the patricians good.
+What authority surfeits on would relieve us: if they
+would yield us but the superfluity, while it were
+wholesome, we might guess they relieved us humanely;
+but they think we are too dear: the leanness that
+afflicts us, the object of our misery, is as an
+inventory to particularise their abundance; our
+sufferance is a gain to them Let us revenge this with
+our pikes, ere we become rakes: for the gods know I
+speak this in hunger for bread, not in thirst for revenge.
+
+To be, or not to be, that is the question:
+Whether 'tis nobler in the mind to suffer
+The slings and arrows of outrageous fortune,
+Or to take arms against a sea of troubles
+And by opposing end them. To die—to sleep,
+No more; and by a sleep to say we end
+The heart-ache and the thousand natural shocks
+That flesh is heir to: 'tis a consummation
+Devoutly to be wish'd. To die, to sleep;
+To sleep, perchance to dream—ay, there's the rub:
+For in that sleep of death what dreams may come,
+When we have shuffled off this mortal coil,
+Must give us pause—there's the respect
+That makes calamity of so long life.
+"""
         
         # Create character-level vocabulary
         self.chars = sorted(list(set(self.text)))
