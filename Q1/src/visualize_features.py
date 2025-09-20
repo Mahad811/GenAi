@@ -74,6 +74,8 @@ def main():
     parser.add_argument('--model_path', type=str, default='outputs/best_model.pt')
     parser.add_argument('--num_layers', type=int, default=3)
     parser.add_argument('--base_filters', type=int, default=32)
+    parser.add_argument('--batch_size', type=int, default=64, help='Batch size (not used but accepted for compatibility)')
+    parser.add_argument('--num_samples', type=int, default=6, help='Number of samples to visualize')
     parser.add_argument('--outdir', type=str, default='outputs')
     args = parser.parse_args()
 
